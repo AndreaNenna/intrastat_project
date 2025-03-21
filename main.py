@@ -1,7 +1,16 @@
+from src.pipeline.pipeline import Pipeline
+from src.pipeline.document_fetcher import ArchiflowDocumentFetcherStep, ArchiflowFetcherPipelineInput
+from src.pipeline.azure_document_intelligence_step import AzureDocumentIntelligenceStep
+from src.pipeline.generative_ai_step import GenerativeAIStep
 from src.services.document_service.archiflow_document_service import ArchiflowDocumentService
+from src.services.document_service.models.archiflow_request_models import ArchiflowDocumentServiceAuthenticationBody, ArchiflowConnectionInfo
 
-from src.services.document_service.models.archiflow_request_models import ArchiflowDocumentServiceAuthenticationBody, ArchiflowDocumentServiceGetDocumentsBody, ArchiflowConnectionInfo, ParametersIn, SessionInfo, Archive, DocumentType, FieldObj, SearchCriteria
-from src.services.document_service.models.filter_model import Filter_IDs, DocumentTypeFilter, ArchiveFilter
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
+
+from langchain_openai import AzureChatOpenAI
+
 from dotenv import load_dotenv
 import os
 
@@ -11,59 +20,51 @@ archiflow_url = os.getenv("ARCHIFLOW_URL")
 archiflow_user = os.getenv("ARCHIFLOW_USER")
 archiflow_password = os.getenv("ARCHIFLOW_PASSWORD")
 
-
 connection_info = ArchiflowConnectionInfo(Language="0",
                                           DateFormat="dd/mm/yyyy",
                                           WorkflowDomain="SIAV")
 
 authentication_request_body = ArchiflowDocumentServiceAuthenticationBody(strUser=archiflow_user,
                                                                          strPassword=archiflow_password,
-                                                                         onConnectionInfo=connection_info)
+                                                                         oConnectionInfo=connection_info)
+
+filters = {
+    "SUPPLIER_CODE": "482582",
+    "COMPANY_CODE": "ITC",
+    "DATE_FILTER" : "01/01/2025:31/01/2025",
+    "INVOCE_STATUS": "BOOKED",
+    "ARCHIVE_TYPE": "SUPPLIER_INVOICES",
+    "DOCUMENT_TYPE": "GENERAL"
+}
+
+pipeline_input = ArchiflowFetcherPipelineInput(credential=authentication_request_body,
+                                               filters= filters)
+
+#ARCHIFLOW STEP INITIALIZATION OBJECTS
+archiflow_document_service = ArchiflowDocumentService(archiflow_url)
+document_fetcher_step = ArchiflowDocumentFetcherStep(document_service=archiflow_document_service)
+
+#DOCUMENT INTELLIGENCE INITIALIZATION OBJECTS
+document_intelligence_client = DocumentIntelligenceClient(endpoint= os.getenv("DOCUMENT_INTELLIGENCE_ENDPOINT"),
+                                                          credential=AzureKeyCredential(os.getenv("DOCUMENT_INTELLIGENCE_KEY")))
+azure_document_intelligence_step = AzureDocumentIntelligenceStep(document_intelligence_client)
+
+#GENERATIVE AI INITIALIZAZION OBJECTS
+azure_openai_client = AzureChatOpenAI(azure_endpoint= os.getenv("AZURE_OPENAI_ENDPOINT"),
+                                      api_key=os.getenv("AZURE_OPENAI_KEY"),
+                                      azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+                                      api_version=os.getenv("API_VERSION"))
+generative_ai_step = GenerativeAIStep(azure_openai_client)
+
+process_pipeline = Pipeline()
+
+process_pipeline.add_step(document_fetcher_step)
+process_pipeline.add_step(azure_document_intelligence_step)
+process_pipeline.add_step(generative_ai_step)
 
 
-archiflow_service = ArchiflowDocumentService(archiflow_url)
-session_id = archiflow_service.authenticate(authentication_request_body).session_info.session_id
+result = process_pipeline.run(pipeline_input)
 
 
-# Build archives
-
-archive = [Archive(archive_id=ArchiveFilter.SUPPLIER_INVOICES.value)]
-
-# Build document_type
-document_type = DocumentType(document_type_id=DocumentTypeFilter.GENERAL.value)
-
-
-#Build Fields
-supplier_code = FieldObj(field_id=Filter_IDs.SUPPLIER_CODE_FILTER.value, field_value="482582")
-company_code = FieldObj(field_id=Filter_IDs.COMPANY_FILTER.value, field_value="ITC")
-data_filter = FieldObj(field_id=Filter_IDs.DATA_FILTER.value, field_value="01/01/2025:31/01/2025")
-invoice_status_filter = FieldObj(FieldId=Filter_IDs.INVOICE_STATUS_FILTER.value, field_value="BOOKED")
-
-filter_fields = [supplier_code, company_code, data_filter, invoice_status_filter]
-
-
-#Build Search criteria
-search_criteria = SearchCriteria(archives=archive,
-                                 document_type=document_type,
-                                 fields=filter_fields)
-
-
-session_info = SessionInfo(session_id=session_id)
-
-parametersIn = ParametersIn(session_info=session_info,
-                            search_criteria=search_criteria,
-                            page_number=1,
-                            page_size=10,
-                            get_indexes=False,
-                            get_invoice=False)
-
-
-archiflow_get_documents_request_body = ArchiflowDocumentServiceGetDocumentsBody(param_in=parametersIn)
-
-result = archiflow_service.get_documents(archiflow_get_documents_request_body)
-
-pdf_ids = [card.card_id for card in result.retrieve_cards_result.cards]
-
-
-for pdf_id in pdf_ids:
-    print(f"File retrieved: {pdf_id}")
+for element in result:
+    print(f"Result for file {element["file_name"]}: \n {element["result"]}")

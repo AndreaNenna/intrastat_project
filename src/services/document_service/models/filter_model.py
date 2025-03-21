@@ -1,36 +1,21 @@
 from enum import Enum
 
-
-class DocumentTypeFilter(Enum):
+class BaseEnumFilter(Enum):
+    @classmethod
+    def get_id(cls, name):
+        try:
+            return cls[name].value
+        except KeyError:
+            raise ValueError(f"Invalid name: {name}")  
+          
+class DocumentTypeFilter(BaseEnumFilter):
     GENERAL = 77
-    
-    @classmethod
-    def get_id(cls, name):
-        try:
-            return cls[name].value
-        except KeyError:
-            raise ValueError(f"Invalid name: {name}")
-        
-class ArchiveFilter(Enum):
-    SUPPLIER_INVOICES = 1
-    
-    @classmethod
-    def get_id(cls, name):
-        try:
-            return cls[name].value
-        except KeyError:
-            raise ValueError(f"Invalid name: {name}")
-        
-        
-class Filter_IDs(Enum):
-    SUPPLIER_CODE_FILTER = 4
-    COMPANY_FILTER = 6
-    DATA_FILTER = 19
-    INVOICE_STATUS_FILTER = 21
 
-    @classmethod
-    def get_id(cls, name):
-        try:
-            return cls[name].value
-        except KeyError:
-            raise ValueError(f"Invalid name: {name}")
+class ArchiveFilter(BaseEnumFilter):
+    SUPPLIER_INVOICES = 0
+
+class Filter_IDs(BaseEnumFilter):
+    SUPPLIER_CODE = "4"
+    COMPANY_CODE = "6"
+    DATE_FILTER = "19"
+    INVOCE_STATUS = "21"

@@ -17,10 +17,10 @@ class ArchiflowConnectionInfo(BaseModel):
 class ArchiflowDocumentServiceAuthenticationBody(BaseModel, RequestBody):
     str_user: str = Field(alias="strUser")
     str_password: str = Field(alias="strPassword")
-    on_connection_info: ArchiflowConnectionInfo = Field(alias="onConnectionInfo")
+    o_connection_info: ArchiflowConnectionInfo = Field(alias="oConnectionInfo")
     
     def to_json(self):
-        return self.json(by_alias=True)
+        return self.model_dump_json(by_alias=True)
 
 
 
@@ -29,10 +29,10 @@ class SessionInfo(BaseModel):
     session_id: str = Field(alias="SessionId")
     
 class Archive(BaseModel):
-    archive_id: str = Field(alias="ArchiveId")
+    archive_id: int = Field(alias="ArchiveId")
     
 class DocumentType(BaseModel):
-    document_type_id: str = Field(alias="DocumentTypeId")
+    document_type_id: int = Field(alias="DocumentTypeId")
 
 class FieldObj(BaseModel):
     field_id: str = Field(alias="FieldId")
@@ -52,10 +52,10 @@ class ParametersIn(BaseModel):
     get_invoice: bool = Field(alias="GetInvoice")
     
 class ArchiflowDocumentServiceGetDocumentsBody(BaseModel, RequestBody):
-    param_in: ParametersIn
+    param_in: ParametersIn = Field(alias="paramIn")
     
     def to_json(self):
-        return self.json(by_alias=True)
+        return self.model_dump_json(by_alias=True)
 
 
 
@@ -63,9 +63,9 @@ class ArchiflowDocumentServiceGetDocumentsBody(BaseModel, RequestBody):
 class ArchiflowDocumentServiceGetDocumentPDFBody(BaseModel, RequestBody):
     str_session_id: str = Field(alias="strSessionId")
     o_card_id: str = Field(alias="oCardId")
-    card_content_mode: str = Field(alias="cardContentMode")
+    card_content_mode: str = Field(alias="CardContentMode")
     n_version: str = Field(alias="nVersion")
     o_water_mark: str = Field(alias="oWaterMark")
     
     def to_json(self):
-        return self.json(by_alias=True)
+        return self.model_dump_json(by_alias=True)

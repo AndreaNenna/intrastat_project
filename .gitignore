@@ -1,2 +1,7 @@
 .env
 intrastat_virtual_environment/
+intrastat_venv
+
+# Compiled Python bytecode
+**/__pycache__/
+*.py[cod]

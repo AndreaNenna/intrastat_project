@@ -30,7 +30,7 @@ class ArchiflowDocumentServiceAuthenticationResponse(BaseModel, Response):
     session_info: SessionInfo = Field(alias="oSessionInfo")
 
     def to_json(self):
-        return self.json(by_alias=True)
+        return self.model_dump_json(by_alias=True)
     
 
 
@@ -122,7 +122,7 @@ class ArchiflowDocumentServiceGetDocumentsResponse(BaseModel,Response):
     retrieve_cards_result: RetrieveCardsByParamResult = Field(alias="RetrieveCardsByParamResult")
 
     def to_json(self):
-        return self.json(by_alias=True)
+        return self.model_dump_json(by_alias=True)
     
     
     
@@ -157,4 +157,4 @@ class ArchiflowDocumentServiceGetDocumentPDFResponse(BaseModel, Response):
     document: Document = Field(alias="oDocument")
 
     def to_json(self):
-        return self.json(by_alias=True)
+        return self.model_dump_json(by_alias=True)
